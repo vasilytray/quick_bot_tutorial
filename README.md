@@ -23,7 +23,7 @@ echo "pydantic-settings" >> requirements.txt
 source venv/bin/activate
 ```
 для выхода из **venv** можно использовать:
-```
+```sh
 deactivate
 ```
 Добавим файл .gitignore и файл с секретами .env (.env - укажем в .gitignore)
@@ -54,7 +54,7 @@ __pycache__/
 
 Установим наконец наши зависимости
 
-```
+```sh
 pip install -r requirements.txt 
 ```
 
