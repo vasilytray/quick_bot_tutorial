@@ -1,7 +1,11 @@
 import os
 import asyncio
 import logging
+from datetime import datetime
+
+
 from aiogram import Bot, Dispatcher, types
+from aiogram.enums.dice_emoji import DiceEmoji
 from aiogram.filters.command import Command
 from dotenv import load_dotenv
 
@@ -43,6 +47,11 @@ async def cmd_reply(message: types.Message):
 @dp.message(Command("dice"))
 async def cmd_dice(message: types.Message):
     await message.answer_dice(emoji=DiceEmoji.DICE)
+
+# передача сообщения в другой чат с номером чата -1001826767638
+@dp.message(Command("dice2"))
+async def cmd_dice2(message: types.Message, bot: Bot):
+    await bot.send_dice(-1001826767638, emoji=DiceEmoji.DICE)
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
