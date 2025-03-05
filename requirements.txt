@@ -1,0 +1,9 @@
+# FastAPI и зависимости
+
+pydantic-settings==2.7.1
+
+# Aiogram для бота
+aiogram==3.17.0
+
+# Dotenv для работы с окружением
+python-dotenv
