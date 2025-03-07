@@ -201,3 +201,5 @@ async def cmd_hello(message: Message):
 ```
 
 В примере выше конструкция **content.as_kwargs() вернёт аргументы text, entities, parse_mode и подставит их в вызов answer()
+
+Упомянутый инструмент форматирования довольно комплексный, [официальная документация](https://core.telegram.org/bots/api#formatting-options) демонстрирует удобное отображение сложных конструкций
