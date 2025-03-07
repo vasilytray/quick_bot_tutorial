@@ -85,3 +85,42 @@ async def main():
 if __name__ == "__main__":
     asyncio.run(main())
 ```
+### Создадим файл конфигурации и переопределим файл секретов в него
+
+Итак, создадим рядом с **bot.py** отдельный файл **config_reader.py** о следующим содержимым
+
+config_reader.py
+```py
+from pydantic_settings import BaseSettings, SettingsConfigDict
+from pydantic import SecretStr
+
+
+class Settings(BaseSettings):
+    # Желательно вместо str использовать SecretStr 
+    # для конфиденциальных данных, например, токена бота
+    bot_token: SecretStr
+
+    # Начиная со второй версии pydantic, настройки класса настроек задаются
+    # через model_config
+    # В данном случае будет использоваться файла .env, который будет прочитан
+    # с кодировкой UTF-8
+    model_config = SettingsConfigDict(env_file='.env', env_file_encoding='utf-8')
+
+
+# При импорте файла сразу создастся 
+# и провалидируется объект конфига, 
+# который можно далее импортировать из разных мест
+config = Settings()
+```
+Теперь немного отредактируем наш bot.py:
+
+
+```py bot.py
+# импорты
+from config_reader import config
+
+# Для записей с типом Secret* необходимо 
+# вызывать метод get_secret_value(), 
+# чтобы получить настоящее содержимое вместо '*******'
+bot = Bot(token=config.bot_token.get_secret_value())
+```

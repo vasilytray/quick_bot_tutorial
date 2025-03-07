@@ -7,16 +7,22 @@ from datetime import datetime
 from aiogram import Bot, Dispatcher, types
 from aiogram.enums.dice_emoji import DiceEmoji
 from aiogram.filters.command import Command
-from dotenv import load_dotenv
-
-load_dotenv()
+from config_reader import config
 
 # Включаем логирование, чтобы не пропустить важные сообщения
 logging.basicConfig(level=logging.INFO)
-# Объект бота
-bot = Bot(token=os.getenv("BOT_TOKEN"))
+
+# Для записей с типом Secret* необходимо 
+# вызывать метод get_secret_value(), 
+# чтобы получить настоящее содержимое вместо '*******'
+bot = Bot(token=config.bot_token.get_secret_value())
+
+# Объект бота напрямую из .env
+# bot = Bot(token=os.getenv("BOT_TOKEN"))
+
 # Диспетчер
 dp = Dispatcher()
+dp["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 # Хэндлер на команду /start
 @dp.message(Command("start"))
@@ -52,6 +58,11 @@ async def cmd_dice(message: types.Message):
 @dp.message(Command("dice2"))
 async def cmd_dice2(message: types.Message, bot: Bot):
     await bot.send_dice(-1001826767638, emoji=DiceEmoji.DICE)
+
+# запрос даты запуска бота
+@dp.message(Command("info"))
+async def cmd_info(message: types.Message, started_at: str):
+    await message.answer(f"Бот запущен {started_at}")
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
