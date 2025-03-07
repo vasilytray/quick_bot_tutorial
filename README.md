@@ -124,3 +124,80 @@ from config_reader import config
 # чтобы получить настоящее содержимое вместо '*******'
 bot = Bot(token=config.bot_token.get_secret_value())
 ```
+
+## Работа с сообщениями
+
+Разберёмся, как применять различные типы форматирования к сообщениям и работать с медиафайлами.
+
+### ТЕКСТ
+
+В распоряжении у разработчика имеется три способа разметки текста: HTML, Markdown и MarkdownV2.
+Наиболее продвинутыми из них считаются HTML и MarkdownV2
+
+#### Форматированный вывод
+За выбор форматирования при отправке сообщений отвечает аргумент ``parse_mode``, например:
+
+```py
+from aiogram import F
+from aiogram.types import Message
+from aiogram.filters import Command
+from aiogram.enums import ParseMode
+
+# Если не указать фильтр F.text, 
+# то хэндлер сработает даже на картинку с подписью /test
+@dp.message(F.text, Command("test"))
+async def any_message(message: Message):
+    await message.answer(
+        "Hello, <b>world</b>!", 
+        parse_mode=ParseMode.HTML
+    )
+    await message.answer(
+        "Hello, *world*\!", 
+        parse_mode=ParseMode.MARKDOWN_V2
+    )
+```
+
+В aiogram можно задать параметры бота по умолчанию. Для этого создайте объект DefaultBotProperties и передайте туда нужные настройки:
+
+```py
+from aiogram.client.default import DefaultBotProperties
+
+bot = Bot(
+    token=config.bot_token.get_secret_value(),
+    default=DefaultBotProperties(
+        parse_mode=ParseMode.HTML
+        # тут ещё много других интересных настроек
+    )
+)
+
+# где-то в функции...
+await message.answer("Сообщение с <u>HTML-разметкой</u>")
+# чтобы явно отключить форматирование в конкретном запросе, 
+# передайте parse_mode=None
+await message.answer(
+    "Сообщение без <s>какой-либо разметки</s>", 
+    parse_mode=None
+)
+```
+
+#### Экранирование ввода
+
+Второе чуть сложнее, но более продвинутое: воспользоваться специальным инструментом, 
+который будет собирать отдельно текст и отдельно информацию о том, какие его куски должны быть отформатированы.
+
+```py
+from aiogram.filters import Command
+from aiogram.utils.formatting import Text, Bold
+
+@dp.message(Command("hello"))
+async def cmd_hello(message: Message):
+    content = Text(
+        "Hello, ",
+        Bold(message.from_user.full_name)
+    )
+    await message.answer(
+        **content.as_kwargs()
+    )
+```
+
+В примере выше конструкция **content.as_kwargs() вернёт аргументы text, entities, parse_mode и подставит их в вызов answer()
