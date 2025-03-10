@@ -200,6 +200,54 @@ async def cmd_hello(message: Message):
     )
 ```
 
-В примере выше конструкция **content.as_kwargs() вернёт аргументы text, entities, parse_mode и подставит их в вызов answer()
+В примере выше конструкция ****content.as_kwargs()** вернёт аргументы **text, entities, parse_mode** и подставит их в вызов **answer()**
 
 Упомянутый инструмент форматирования довольно комплексный, [официальная документация](https://core.telegram.org/bots/api#formatting-options) демонстрирует удобное отображение сложных конструкций
+
+#### Сохранение форматирования
+Представим, что бот должен получить форматированный текст от пользователя и добавить туда что-то своё, например, отметку времени. 
+
+Напишем простой код:
+```py
+# новый импорт!
+from datetime import datetime
+
+@dp.message(F.text)
+async def echo_with_time(message: Message):
+    # Получаем текущее время в часовом поясе ПК
+    time_now = datetime.now().strftime('%H:%M')
+    # Создаём подчёркнутый текст
+    added_text = html.underline(f"Создано в {time_now}")
+    # Отправляем новое сообщение с добавленным текстом
+    await message.answer(f"{message.text}\n\n{added_text}", parse_mode="HTML")
+```
+
+НО!  ``message.text`` возвращает просто текст, без каких-либо оформлений. 
+Чтобы получить текст в нужном форматировании, воспользуемся альтернативными свойствами: ``message.html_text`` или ``message.md_text``.
+
+#### Работа с entities
+**Telegram** сильно упрощает жизнь разработчикам, выполняя предобработку сообщений пользователей на своей стороне. Например, некоторые сущности, типа **e-mail**, **номера телефона, юзернейма** и др. можно не доставать регулярными выражениями, а извлечь напрямую из объекта **Message** и поля **entities**, содержащего массив объектов типа [MessageEntity](https://core.telegram.org/bots/api#messageentity).
+
+Здесь кроется важный подвох. *Telegram возвращает не сами значения, а их начало в тексте и длину*. 
+```py
+@dp.message(F.text)
+async def extract_data(message: Message):
+    data = {
+        "url": "<N/A>",
+        "email": "<N/A>",
+        "code": "<N/A>"
+    }
+    entities = message.entities or []
+    for item in entities:
+        if item.type in data.keys():
+            # Неправильно
+            # data[item.type] = message.text[item.offset : item.offset+item.length]
+            # Правильно
+            data[item.type] = item.extract_from(message.text)
+    await message.reply(
+        "Вот что я нашёл:\n"
+        f"URL: {html.quote(data['url'])}\n"
+        f"E-mail: {html.quote(data['email'])}\n"
+        f"Пароль: {html.quote(data['code'])}"
+    )
+```

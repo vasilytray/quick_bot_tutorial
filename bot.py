@@ -46,6 +46,7 @@ async def cmd_start(message: types.Message):
         as_marked_section(
             Bold("Я умею:"),
             "/test1  - Отвечу Test1",
+            "/more   - Еще больше возможностей!",
             "/answer - Просто отвечу",
             "/reply  - Отвечу ответом",
             "/name   - Поприветствую тебя по Имени и Фамилии",
@@ -59,6 +60,36 @@ async def cmd_start(message: types.Message):
             marker="❌ ",
         ),
         HashTag("#я"),
+        # Text(
+        #     "Номер телефона, ",
+        #     Bold(message.contact.phone_number)
+        # )
+    )
+    await message.answer(
+        **content.as_kwargs()
+    )
+
+@dp.message(Command("more"))
+async def cmd_more(message: types.Message):
+    # await message.answer("Привет! ")
+    content = as_list(
+        Text(
+            
+            Bold(message.from_user.first_name),
+            "  Еще я могу вот что: ",
+        ),
+        as_marked_section(
+            Bold(""),
+            "Если ты напишешь в тексте ",
+            "адрес сайта,",
+            "e-mail,",
+            "Номер телефона,",
+            "Какой нибудь код или пароль",
+            "Я распознаю из и напишу что нашел", 
+            "/dice   - Подкину для тебя кубик, загадай число ;)",
+            marker="✅ ",
+        ),
+        HashTag("#еще"),
         # Text(
         #     "Номер телефона, ",
         #     Bold(message.contact.phone_number)
@@ -141,6 +172,41 @@ async def cmd_dice2(message: types.Message, bot: Bot):
 @dp.message(Command("info"))
 async def cmd_info(message: types.Message, started_at: str):
     await message.answer(f"Бот запущен {started_at}")
+
+# сохраним формат введенного пользователем текста - после теста отключим хендлер
+#@dp.message(F.text)
+async def echo_with_time(message: Message):
+    # Получаем текущее время в часовом поясе ПК
+    time_now = datetime.now().strftime('%H:%M')
+    # Создаём подчёркнутый текст
+    added_text = html.underline(f"Написано в {time_now}")
+    not_anderstand = (message.from_user.first_name)
+    # Отправляем новое сообщение с добавленным текстом
+    await message.answer(f"{message.html_text}\n\n{not_anderstand}!!! Я не понимаю эту команду :(\nДля получения списка известных мне команд напиши /start \n{added_text}", parse_mode="HTML")
+
+# Извлекаем из сообщений пользователя данные url, email, телефон и код
+@dp.message(F.text)
+async def extract_data(message: Message):
+    data = {
+        "url": "<N/A>",
+        "email": "<N/A>",
+        "phone_number": "<N/A>",
+        # "code": "<N/A>"
+    }
+    entities = message.entities or []
+    for item in entities:
+        if item.type in data.keys():
+            # Неправильно
+            # data[item.type] = message.text[item.offset : item.offset+item.length]
+            # Правильно
+            data[item.type] = item.extract_from(message.text)
+    await message.reply(
+        "Вот что я нашёл:\n"
+        f"URL: {html.quote(data['url'])}\n"
+        f"E-mail: {html.quote(data['email'])}\n"
+        f"Телефон: {html.quote(data['phone_number'])}\n"
+        # f"Пароль: {html.quote(data['code'])}"
+    )
 
 # Запуск процесса поллинга новых апдейтов
 async def main():
