@@ -251,3 +251,135 @@ async def extract_data(message: Message):
         f"Пароль: {html.quote(data['code'])}"
     )
 ```
+
+#### Команды и их аргументы
+
+В составе aiogram есть фильтр Command(), упрощающий жизнь разработчика. 
+
+Реализуем последний пример в коде:
+
+```py
+@dp.message(Command("settimer", prefix="/!")) # добавим дополнительные префиксы для  оперделения команды
+async def cmd_settimer(
+        message: Message,
+        command: CommandObject
+):
+    # Если не переданы никакие аргументы, то
+    # command.args будет None
+    if command.args is None:
+        await message.answer(
+            "Ошибка: не переданы аргументы"
+        )
+        return
+    # Пробуем разделить аргументы на две части по первому встречному пробелу
+    try:
+        delay_time, text_to_send = command.args.split(" ", maxsplit=1)
+    # Если получилось меньше двух частей, вылетит ValueError
+    except ValueError:
+        await message.answer(
+            "Ошибка: неправильный формат команды. Пример:\n"
+            "/settimer <time> <message>"
+        )
+        return
+    await message.answer(
+        "Таймер добавлен!\n"
+        f"Время: {delay_time}\n"
+        f"Текст: {text_to_send}"
+    )
+```
+
+Проблема кастомных префиксов в группах только в том, что боты не-админы со включенным Privacy Mode (по умолчанию) могут не увидеть такие команды из-за особенностей логики сервера. 
+Самый частый use-case — боты-модераторы групп, которые уже являются администраторами.
+
+
+#### Диплинки
+Существует одна команда в **Telegram**, у которой есть чуть больше возможностей. Это **/start**. Дело в том, что можно сформировать ссылку вида t.me/bot?start=xxx и пре переходе по такой ссылке пользователю покажут кнопку «Начать», при нажатии которой бот получит сообщение **/start xxx**.
+
+Учтите, что диплинки через start отправляют пользователя в личку с ботом. Чтобы выбрать группу и отправить диплинк туда, замените start на startgroup. Также у aiogram существует удобная функция для создания диплинков прямо из вашего кода.
+
+Первый дииплинк https://t.me/your_bot?start=help выведет сообщение, соответсвующее команде /help
+
+Второй диплиинк https://t.me/your_bot?start=book_2 выведет соответствующее 
+сообщение, полученное из регулярного выражения
+
+```
+Sending book №2
+```
+
+*Больше диплинков, но не для ботов:*
+
+В документации **Telegram** есть подробное описание всевозможных диплинков для клиентских приложений: https://core.telegram.org/api/links
+
+#### Предпросмотр ссылок
+Обычно при отправке текстового сообщения со ссылками **Telegram** пытается найти и показать предпросмотр первой по порядку ссылки. Это поведение можно настроить по своему желанию, передав в качестве аргумента **link_preview_options** метода **send_message()** объект L**inkPreviewOptions**
+
+```py
+# Новый импорт
+from aiogram.types import LinkPreviewOptions
+
+@dp.message(Command("links"))
+async def cmd_links(message: Message):
+    links_text = (
+        "https://nplus1.ru/news/2024/05/23/voyager-1-science-data"
+        "\n"
+        "https://t.me/telegram"
+    )
+    # Ссылка отключена
+    options_1 = LinkPreviewOptions(is_disabled=True)
+    await message.answer(
+        f"Нет превью ссылок\n{links_text}",
+        link_preview_options=options_1
+    )
+
+    # -------------------- #
+
+    # Маленькое превью
+    # Для использования prefer_small_media обязательно указывать ещё и url
+    options_2 = LinkPreviewOptions(
+        url="https://nplus1.ru/news/2024/05/23/voyager-1-science-data",
+        prefer_small_media=True
+    )
+    await message.answer(
+        f"Маленькое превью\n{links_text}",
+        link_preview_options=options_2
+    )
+
+    # -------------------- #
+
+    # Большое превью
+    # Для использования prefer_large_media обязательно указывать ещё и url
+    options_3 = LinkPreviewOptions(
+        url="https://nplus1.ru/news/2024/05/23/voyager-1-science-data",
+        prefer_large_media=True
+    )
+    await message.answer(
+        f"Большое превью\n{links_text}",
+        link_preview_options=options_3
+    )
+
+    # -------------------- #
+
+    # Можно сочетать: маленькое превью и расположение над текстом
+    options_4 = LinkPreviewOptions(
+        url="https://nplus1.ru/news/2024/05/23/voyager-1-science-data",
+        prefer_small_media=True,
+        show_above_text=True
+    )
+    await message.answer(
+        f"Маленькое превью над текстом\n{links_text}",
+        link_preview_options=options_4
+    )
+
+    # -------------------- #
+
+    # Можно выбрать, какая ссылка будет использоваться для предпосмотра,
+    options_5 = LinkPreviewOptions(
+        url="https://t.me/telegram"
+    )
+    await message.answer(
+        f"Предпросмотр не первой ссылки\n{links_text}",
+        link_preview_options=options_5
+    )
+```
+Также некоторые параметры предпросмотра можно указать по умолчанию в DefaultBotProperties
+

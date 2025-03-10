@@ -5,13 +5,15 @@ from datetime import datetime
 
 
 from aiogram import Bot, Dispatcher, types
+from aiogram.client.default import DefaultBotProperties
+from aiogram.enums import ParseMode
 from aiogram.enums.dice_emoji import DiceEmoji
 from aiogram import F, html
 from aiogram.types import Message
-from aiogram.filters import Command
+from aiogram.filters import Command, CommandObject
 from aiogram.utils.formatting import Text, Bold, as_list, as_marked_section, as_key_value, HashTag
-from aiogram.enums import ParseMode
-from aiogram.client.default import DefaultBotProperties
+
+
 from config_reader import config
 
 # Включаем логирование, чтобы не пропустить важные сообщения
@@ -84,9 +86,9 @@ async def cmd_more(message: types.Message):
             "адрес сайта,",
             "e-mail,",
             "Номер телефона,",
-            "Какой нибудь код или пароль",
-            "Я распознаю из и напишу что нашел", 
+            "Я распознаю их и напишу что нашел", 
             "/dice   - Подкину для тебя кубик, загадай число ;)",
+            "/settime <time> <message> - через установленное время сообще Message ;)",
             marker="✅ ",
         ),
         HashTag("#еще"),
@@ -185,7 +187,7 @@ async def echo_with_time(message: Message):
     await message.answer(f"{message.html_text}\n\n{not_anderstand}!!! Я не понимаю эту команду :(\nДля получения списка известных мне команд напиши /start \n{added_text}", parse_mode="HTML")
 
 # Извлекаем из сообщений пользователя данные url, email, телефон и код
-@dp.message(F.text)
+#@dp.message(F.text)
 async def extract_data(message: Message):
     data = {
         "url": "<N/A>",
@@ -206,6 +208,34 @@ async def extract_data(message: Message):
         f"E-mail: {html.quote(data['email'])}\n"
         f"Телефон: {html.quote(data['phone_number'])}\n"
         # f"Пароль: {html.quote(data['code'])}"
+    )
+
+@dp.message(Command("settimer", prefix="/!")) # добавим дополнительные префиксы для  оперделения команды
+async def cmd_settimer(
+        message: Message,
+        command: CommandObject
+):
+    # Если не переданы никакие аргументы, то
+    # command.args будет None
+    if command.args is None:
+        await message.answer(
+            "Ошибка: не переданы аргументы"
+        )
+        return
+    # Пробуем разделить аргументы на две части по первому встречному пробелу
+    try:
+        delay_time, text_to_send = command.args.split(" ", maxsplit=1)
+    # Если получилось меньше двух частей, вылетит ValueError
+    except ValueError:
+        await message.answer(
+            "Ошибка: неправильный формат команды. Пример:\n"
+            "/settimer <time> <message>"
+        )
+        return
+    await message.answer(
+        "Таймер добавлен!\n"
+        f"Время: {delay_time}\n"
+        f"Текст: {text_to_send}"
     )
 
 # Запуск процесса поллинга новых апдейтов
