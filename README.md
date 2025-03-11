@@ -383,3 +383,48 @@ async def cmd_links(message: Message):
 ```
 Также некоторые параметры предпросмотра можно указать по умолчанию в DefaultBotProperties
 
+### Медиафайлы
+
+#### Отправка файлов
+
+У большинства медиафайлов есть свойства ``file_id`` и ``file_unique_id``. Первый можно использовать для повторной отправки одного и того же файла много раз, причём отправка будет мгновенной, т.к. сам файл уже лежит на серверах **Telegram**
+
+#### Скачивание файлов
+
+бот может скачать медиа к себе на компьютер/сервер. Для этого у объекта типа Bot есть метод download()
+
+```py
+@dp.message(F.photo)
+async def download_photo(message: Message, bot: Bot):
+    await bot.download(
+        message.photo[-1],
+        destination=f"/tmp/{message.photo[-1].file_id}.jpg"
+    )
+
+
+@dp.message(F.sticker)
+async def download_sticker(message: Message, bot: Bot):
+    await bot.download(
+        message.sticker,
+        # для Windows пути надо подправить
+        destination=f"/tmp/{message.sticker.file_id}.webp"
+    )
+```
+#### Альбомы
+
+Начиная с версии 3.1, в [aiogram есть «сборщик» альбомов,](https://docs.aiogram.dev/en/latest/utils/media_group.html)
+
+### Сервисные (служебные) сообщения
+
+Сообщения в Telegram делятся на текстовые, медиафайлы и служебные (они же — сервисные). Настало время поговорить о последних.
+
+У такого служебного сообщения будет content_type равный "**new_chat_members**", но вообще это объект Message, у которого заполнено одноимённое поле.
+```py
+@dp.message(F.new_chat_members)
+async def somebody_added(message: Message):
+    for user in message.new_chat_members:
+        # проперти full_name берёт сразу имя И фамилию 
+        # (на скриншоте выше у юзеров нет фамилии)
+        await message.reply(f"Привет, {user.full_name}")
+
+```

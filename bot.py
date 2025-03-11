@@ -12,6 +12,9 @@ from aiogram import F, html
 from aiogram.types import Message
 from aiogram.filters import Command, CommandObject
 from aiogram.utils.formatting import Text, Bold, as_list, as_marked_section, as_key_value, HashTag
+from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
+# новый импорт!
+from aiogram.utils.markdown import hide_link #для скрытой ссылки
 
 
 from config_reader import config
@@ -48,12 +51,15 @@ async def cmd_start(message: types.Message):
         as_marked_section(
             Bold("Я умею:"),
             "/test1  - Отвечу Test1",
-            "/more   - Еще больше возможностей!",
             "/answer - Просто отвечу",
             "/reply  - Отвечу ответом",
             "/name   - Поприветствую тебя по Имени и Фамилии",
             "/aboute   - Дам тебе характеристику", 
             "/dice   - Подкину для тебя кубик, загадай число ;)",
+            "Если ты мне отправишь гифку, я тебе ей же и отвечу",
+            "----------",
+            "/more   - Еще больше возможностей!",
+
             marker="✅ ",
         ),
         as_marked_section(
@@ -88,7 +94,8 @@ async def cmd_more(message: types.Message):
             "Номер телефона,",
             "Я распознаю их и напишу что нашел", 
             "/dice   - Подкину для тебя кубик, загадай число ;)",
-            "/settime <time> <message> - через установленное время сообще Message ;)",
+            "/settimer <time> <message> - через установленное время сообще Message ;)", 
+            "/hidden_link   - Подкину для тебя угарную фотку ;)",
             marker="✅ ",
         ),
         HashTag("#еще"),
@@ -236,6 +243,81 @@ async def cmd_settimer(
         "Таймер добавлен!\n"
         f"Время: {delay_time}\n"
         f"Текст: {text_to_send}"
+    )
+
+# Мгновенный ответ пользователю гифкой, которую он прислал
+@dp.message(F.animation)
+async def echo_gif(message: Message):
+    await message.reply_animation(message.animation.file_id)
+    
+    # await message.answer_animation(message.file_id)
+    await message.answer_animation(
+        animation=message.animation.file_id,
+        caption="Я сегодня:",
+        show_caption_above_media=True
+    )
+
+@dp.message(Command('images'))
+async def upload_photo(message: Message):
+    # Сюда будем помещать file_id отправленных файлов, чтобы потом ими воспользоваться
+    file_ids = []
+
+    # Чтобы продемонстрировать BufferedInputFile, воспользуемся "классическим"
+    # открытием файла через `open()`. Но, вообще говоря, этот способ
+    # лучше всего подходит для отправки байтов из оперативной памяти
+    # после проведения каких-либо манипуляций, например, редактированием через Pillow
+    with open("buffer_emulation.jpg", "rb") as image_from_buffer:
+        result = await message.answer_photo(
+            BufferedInputFile(
+                image_from_buffer.read(),
+                filename="image from buffer.jpg"
+            ),
+            caption="Изображение из буфера"
+        )
+        file_ids.append(result.photo[-1].file_id)
+
+    # Отправка файла из файловой системы
+    image_from_pc = FSInputFile("image_from_pc.jpg")
+    result = await message.answer_photo(
+        image_from_pc,
+        caption="Изображение из файла на компьютере"
+    )
+    file_ids.append(result.photo[-1].file_id)
+
+    # Отправка файла по ссылке
+    image_from_url = URLInputFile("https://picsum.photos/seed/groosha/400/300")
+    result = await message.answer_photo(
+        image_from_url,
+        caption="Изображение по ссылке"
+    )
+    file_ids.append(result.photo[-1].file_id)
+    await message.answer("Отправленные файлы:\n"+"\n".join(file_ids))
+
+# отправка приветственного сообщения вошедшему
+@dp.message(F.new_chat_members)
+async def somebody_added(message: Message):
+    for user in message.new_chat_members:
+        # проперти full_name берёт сразу имя И фамилию 
+        # (на скриншоте выше у юзеров нет фамилии)
+        await message.reply(f"Привет, {user.full_name}")
+
+# Прячем ссылку в HTML
+@dp.message(Command("hidden_link"))
+async def cmd_hidden_link(message: Message):
+    await message.answer(
+        f"{hide_link('https://i.pinimg.com/736x/26/3b/80/263b80dab1464429dd3f082a6601ad76.jpg')}"
+        f"Документация Telegram: *существует*\n"
+        f"Пользователи: *не читают документацию*\n"
+        f"Груша:"
+    )
+
+# пока не работает, надо понять как получить file_id
+@dp.message(Command("gif"))
+async def send_gif(message: Message):
+    await message.answer_animation(
+        animation="<file_id>",
+        caption="Я сегодня:",
+        show_caption_above_media=True
     )
 
 # Запуск процесса поллинга новых апдейтов
