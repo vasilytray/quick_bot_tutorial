@@ -10,11 +10,13 @@ from aiogram.enums import ParseMode
 from aiogram.enums.dice_emoji import DiceEmoji
 from aiogram import F, html
 from aiogram.types import Message
-from aiogram.filters import Command, CommandObject
+from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram.utils.formatting import Text, Bold, as_list, as_marked_section, as_key_value, HashTag
 from aiogram.types import FSInputFile, URLInputFile, BufferedInputFile
 # новый импорт!
 from aiogram.utils.markdown import hide_link #для скрытой ссылки
+# новый импорт!
+from aiogram.utils.keyboard import ReplyKeyboardBuilder # для создания кнопок
 
 
 from config_reader import config
@@ -59,15 +61,16 @@ async def cmd_start(message: types.Message):
             "Если ты мне отправишь гифку, я тебе ей же и отвечу",
             "----------",
             "/more   - Еще больше возможностей!",
+            "/vfy    - Получить подтверждение Вашего номера телефона",
 
             marker="✅ ",
         ),
         as_marked_section(
             Bold("Failed:"),
-            "Не смогу назвать номер твоего телефона :( )",
+            "Не смогу полететь на луну:( ",
             marker="❌ ",
         ),
-        HashTag("#я"),
+        HashTag("#ищу"),
         # Text(
         #     "Номер телефона, ",
         #     Bold(message.contact.phone_number)
@@ -93,6 +96,7 @@ async def cmd_more(message: types.Message):
             "e-mail,",
             "Номер телефона,",
             "Я распознаю их и напишу что нашел", 
+            "/special_buttons - выведу спецкнопки с командами",
             "/dice   - Подкину для тебя кубик, загадай число ;)",
             "/settimer <time> <message> - через установленное время сообще Message ;)", 
             "/hidden_link   - Подкину для тебя угарную фотку ;)",
@@ -310,6 +314,113 @@ async def cmd_hidden_link(message: Message):
         f"Пользователи: *не читают документацию*\n"
         f"Груша:"
     )
+
+
+# Специальные обычные кнопки
+@dp.message(Command("special_buttons"))
+async def cmd_special_buttons(message: types.Message):
+    builder = ReplyKeyboardBuilder()
+    # метод row позволяет явным образом сформировать ряд
+    # из одной или нескольких кнопок. Например, первый ряд
+    # будет состоять из двух кнопок...
+    builder.row(
+        types.KeyboardButton(text="Запросить геолокацию", request_location=True),
+        types.KeyboardButton(
+            text="Подтвердить контакт", 
+            request_contact=True
+            )
+    )
+    # ... второй из одной ...
+    builder.row(types.KeyboardButton(
+        text="Создать викторину",
+        request_poll=types.KeyboardButtonPollType(type="quiz"))
+    )
+    # ... а третий снова из двух
+    builder.row(
+        types.KeyboardButton(
+            text="Выбрать премиум пользователя",
+            request_user=types.KeyboardButtonRequestUser(
+                request_id=1,
+                user_is_premium=True
+            )
+        ),
+        types.KeyboardButton(
+            text="Выбрать супергруппу с форумами",
+            request_chat=types.KeyboardButtonRequestChat(
+                request_id=2,
+                chat_is_channel=True,
+                chat_is_forum=False
+            )
+        )
+    )
+    # WebApp-ов пока нет, сорри :(
+
+    await message.answer(
+        "Выберите действие:",
+        reply_markup=builder.as_markup(resize_keyboard=True),
+    )
+# Прием нажатий нижних двух кнопок
+@dp.message(lambda message: message.contact is not None)
+async def handle_contact(message: types.Message):
+   # Проверяем, что контакт принадлежит отправителю
+    if message.from_user.id == message.contact.user_id:
+        await message.answer(
+            f"Спасибо за контакт, {message.contact.first_name}!\n"
+            f"Номер телефона: {message.contact.phone_number}",
+            reply_markup=types.ReplyKeyboardRemove()  # Убираем клавиатуру
+        )
+    else:
+        await message.answer("Это не ваш контакт!")
+
+@dp.message(F.user_shared)
+async def on_user_shared(message: types.Message):
+    await message.answer(
+        f"Request {message.user_shared.request_id}. "
+        f"User ID: {message.user_shared.user_id}"
+    )
+
+
+@dp.message(F.chat_shared)
+async def on_user_shared(message: types.Message):
+    await message.answer(
+        f"Request {message.chat_shared.request_id}. "
+        f"Chat ID: {message.chat_shared.chat_id}"
+    )
+
+@dp.message(Command("vfy"))
+@dp.message(CommandStart(
+    deep_link=True, magic=F.args == "vfy"
+))
+async def cmd_start_vfy(message: types.Message):
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        types.KeyboardButton(
+            text="Подтвердить контакт",
+            request_contact=True
+        )
+    )
+    # Отправляем сообщение с клавиатурой
+    await message.answer(
+        "Для подтверждения номера телефона нажмите кнопку ниже:",
+        reply_markup=builder.as_markup(
+            resize_keyboard=True,  # Опционально: автоматический размер
+            one_time_keyboard=True, # Опционально: скрыть после нажатия
+            input_field_placeholder="Подтвердите номер телефона"  # Подсказка в поле ввода
+        )
+    )
+
+# Хэндлер для обработки полученного контакта
+@dp.message(lambda message: message.contact is not None)
+async def handle_contact(message: types.Message):
+    # Проверяем, что контакт принадлежит отправителю
+    if message.from_user.id == message.contact.user_id:
+        await message.answer(
+            f"Спасибо за контакт, {message.contact.first_name}!\n"
+            f"Номер телефона: {message.contact.phone_number}",
+            reply_markup=types.ReplyKeyboardRemove()  # Убираем клавиатуру
+        )
+    else:
+        await message.answer("Это не ваш контакт!")
 
 # пока не работает, надо понять как получить file_id
 @dp.message(Command("gif"))

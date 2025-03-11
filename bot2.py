@@ -8,6 +8,9 @@ from aiogram.filters import Command, CommandObject, CommandStart
 from aiogram import Bot, Dispatcher, types
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
+# новый импорт!
+from aiogram.utils.keyboard import ReplyKeyboardBuilder
+
 
 from config_reader import config
 
@@ -31,6 +34,45 @@ bot = Bot(
 dp = Dispatcher()
 dp["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
+# @dp.message(Command("start"))
+async def cmd_start(message: types.Message):
+    kb = [
+        [
+            types.KeyboardButton(text="С пюрешкой"),
+            types.KeyboardButton(text="Без пюрешки")
+        ],
+    ]
+    keyboard = types.ReplyKeyboardMarkup(
+        keyboard=kb,
+        resize_keyboard=True,
+        input_field_placeholder="Выберите способ подачи"
+    )
+    await message.answer("Как подавать котлеты?", reply_markup=keyboard)
+
+@dp.message(F.text.lower() == "с пюрешкой")
+async def with_puree(message: types.Message):
+    await message.reply("Отличный выбор!", reply_markup=types.ReplyKeyboardRemove()) #удалим клавиатуру после ответа
+
+@dp.message(F.text.lower() == "без пюрешки")
+async def without_puree(message: types.Message):
+    await message.reply("Так невкусно!")
+
+
+@dp.message(Command("reply_builder"))
+async def reply_builder(message: types.Message):
+    builder = ReplyKeyboardBuilder()
+    for i in range(1, 17):
+        builder.add(types.KeyboardButton(text=str(i)))
+    builder.adjust(4)
+    await message.answer(
+        "Выберите число:",
+        reply_markup=builder.as_markup(resize_keyboard=True),
+    )
+
+@dp.message(F.text.lower() == "10")
+async def with_puree(message: types.Message):
+    await message.reply("Отличный выбор!", reply_markup=types.ReplyKeyboardRemove()) #удалим клавиатуру после ответа
+
 @dp.message(Command("help"))
 @dp.message(CommandStart(
     deep_link=True, magic=F.args == "help"
@@ -50,9 +92,43 @@ async def cmd_start_book(
     book_number = command.args.split("_")[1]
     await message.answer(f"Sending book №{book_number}")
 
+@dp.message(Command("vfy"))
+@dp.message(CommandStart(
+    deep_link=True, magic=F.args == "vfy"
+))
+async def cmd_start_vfy(message: types.Message):
+    builder = ReplyKeyboardBuilder()
+    builder.row(
+        types.KeyboardButton(
+            text="Подтвердить контакт",
+            request_contact=True
+        )
+    )
+    # Отправляем сообщение с клавиатурой
+    await message.answer(
+        "Для подтверждения номера телефона нажмите кнопку ниже:",
+        reply_markup=builder.as_markup(
+            resize_keyboard=True,  # Опционально: автоматический размер
+            one_time_keyboard=True # Опционально: скрыть после нажатия
+        )
+    )
+
+# Хэндлер для обработки полученного контакта
+@dp.message(lambda message: message.contact is not None)
+async def handle_contact(message: types.Message):
+    # Проверяем, что контакт принадлежит отправителю
+    if message.from_user.id == message.contact.user_id:
+        await message.answer(
+            f"Спасибо за контакт, {message.contact.first_name}!\n"
+            f"Номер телефона: {message.contact.phone_number}",
+            reply_markup=types.ReplyKeyboardRemove()  # Убираем клавиатуру
+        )
+    else:
+        await message.answer("Это не ваш контакт!")
+
     # Запуск процесса поллинга новых апдейтов
 async def main():
-    # Регистрируем хэндлер cmd_test2 по команде /start
+    
     # Запускаем бота
     await dp.start_polling(bot)
 
