@@ -322,7 +322,7 @@ async def cmd_special_buttons(message: types.Message):
             text="Выбрать премиум пользователя",
             request_user=types.KeyboardButtonRequestUser(
                 request_id=1,
-                user_is_premium=True
+                user_is_premium=False
             )
         ),
         types.KeyboardButton(
@@ -357,8 +357,10 @@ async def handle_contact(message: types.Message):
 async def on_user_shared(message: types.Message):
     await message.answer(
         f"Request {message.user_shared.request_id}. "
+        
         f"User ID: {message.user_shared.user_id}"
     )
+    abc_id = message.user_shared.request_id
 
 
 @dp.message(F.chat_shared)
@@ -367,6 +369,36 @@ async def on_user_shared(message: types.Message):
         f"Request {message.chat_shared.request_id}. "
         f"Chat ID: {message.chat_shared.chat_id}"
     )
+
+# новый импорт
+from aiogram.utils.keyboard import InlineKeyboardBuilder
+
+@dp.message(Command("inline_url"))
+async def cmd_inline_url(message: types.Message, bot: Bot):
+    builder = InlineKeyboardBuilder()
+    builder.row(types.InlineKeyboardButton(
+        text="GitHub", url="https://github.com")
+    )
+    builder.row(types.InlineKeyboardButton(
+        text="Оф. канал Telegram",
+        url="tg://resolve?domain=telegram")
+    )
+
+    # Чтобы иметь возможность показать ID-кнопку,
+    # У юзера должен быть False флаг has_private_forwards
+    user_id = message.from_user.id
+    chat_info = await bot.get_chat(user_id)
+    if not chat_info.has_private_forwards:
+        builder.row(types.InlineKeyboardButton(
+            text="Какой-то пользователь",
+            url=f"tg://user?id={user_id}")
+        )
+
+    await message.answer(
+        'Выберите ссылку',
+        reply_markup=builder.as_markup(),
+    )
+
 
 @dp.message(Command("vfy"))
 @dp.message(CommandStart(
