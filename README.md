@@ -518,3 +518,23 @@ async def reply_builder(message: types.Message):
 
 **Запуск веб-приложения (WebApp)**. При нажатии на кнопку открывает WebApp. Необходимо передать объект WebAppInfo. В этой книге веб-аппы пока рассматриваться не будут.
 
+две заготовки хэндлеров на приём нажатий от нижних двух кнопок:
+```py
+# новый импорт
+from aiogram import F
+
+@dp.message(F.user_shared)
+async def on_user_shared(message: types.Message):
+    print(
+        f"Request {message.user_shared.request_id}. "
+        f"User ID: {message.user_shared.user_id}"
+    )
+
+
+@dp.message(F.chat_shared)
+async def on_user_shared(message: types.Message):
+    print(
+        f"Request {message.chat_shared.request_id}. "
+        f"User ID: {message.chat_shared.chat_id}"
+    )
+```
