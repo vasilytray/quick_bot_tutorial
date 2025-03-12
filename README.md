@@ -558,3 +558,35 @@ async def on_user_shared(message: types.Message):
 
 У колбэк-кнопок есть специальное значение **(data)**, по которому ваше приложение опознаёт, что нажато и что надо сделать. И выбор правильного data очень важен! Стоит также отметить, что, в отличие от обычных кнопок, нажатие на колбэк-кнопку позволяет сделать практически что угодно, от заказа пиццы до запуска вычислений на кластере суперкомпьютеров.
 
+Сервер Telegram  отправив нам кнопку callback ждет от нас подтверждения о доставке колбэка. Нам необходимо вызвать метод **answer()**  в общем случае в него можем ничего не передавать, но можно вызвать специальное окошко (всплывающее сверху или поверх экрана):
+
+```py
+@dp.callback_query(F.data == "random_value")
+async def send_random_value(callback: types.CallbackQuery):
+    await callback.message.answer(str(randint(1, 10)))
+    await callback.answer(
+        text="Спасибо, что воспользовались ботом!",
+        show_alert=True
+    )
+    # или просто await callback.answer()
+```
+> В функции send_random_value мы вызывали метод answer() не у message, а у callback.message. Это связано с тем, что колбэк-хэндлеры работают не с сообщениями (тип Message), а с колбэками (тип CallbackQuery), у которого другие поля, и само сообщение — всего лишь его часть. Учтите также, что message — это сообщение, к которому была прицеплена кнопка (т.е. отправитель такого сообщения — сам бот). Если хотите узнать, кто нажал на кнопку, смотрите поле from (в вашем коде это будет callback.from_user, т.к. слово from зарезервировано в Python)
+
+Иногда пользователь, вызвав несколько раз сообщение с колбэками, может нажимать кнопки новых и старых сообщений и тогда может возникнуть ошибка, которую мы получим от Bot API, что старый и новый тексты совпадают, а бот словит исключение: ``Bad Request: message is not modified: specified new message content and reply markup are exactly the same as a current content and reply markup of the message.
+
+Ошибка MessageNotModified относится к категории Bad Request, поэтому у нас есть выбор: проигнорировать весь подобный класс ошибок, либо отловить весь класс BadRequest и попытаться по тексту ошибки опознать конкретную причину. 
+
+Чтобы игнорировать весь подобный  класс обновим функцию ``update_num_text()``
+
+```py
+# Новые импорты!
+from contextlib import suppress
+from aiogram.exceptions import TelegramBadRequest
+
+async def update_num_text(message: types.Message, new_value: int):
+    with suppress(TelegramBadRequest):
+        await message.edit_text(
+            f"Укажите число: {new_value}",
+            reply_markup=get_keyboard()
+        )
+```

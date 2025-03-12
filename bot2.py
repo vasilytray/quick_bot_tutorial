@@ -1,3 +1,4 @@
+from random import randint
 import re
 import asyncio
 import logging
@@ -10,6 +11,9 @@ from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
 # новый импорт!
 from aiogram.utils.keyboard import ReplyKeyboardBuilder
+# Новые импорты!
+from contextlib import suppress
+from aiogram.exceptions import TelegramBadRequest
 
 
 from config_reader import config
@@ -128,6 +132,75 @@ async def handle_contact(message: types.Message):
 
 # новый импорт
 from aiogram.utils.keyboard import InlineKeyboardBuilder
+# Запускаем Callback - кнопка
+@dp.message(Command("random"))
+async def cmd_random(message: types.Message):
+    builder = InlineKeyboardBuilder()
+    builder.add(types.InlineKeyboardButton(
+        text="Нажми меня",
+        callback_data="random_value")
+    )
+    await message.answer(
+        "Нажмите на кнопку, чтобы бот отправил число от 1 до 10",
+        reply_markup=builder.as_markup()
+    )
+# хэндлер обработки callback кнопки 
+@dp.callback_query(F.data == "random_value")
+async def send_random_value(callback: types.CallbackQuery):
+    await callback.message.answer(str(randint(1, 10)))
+    # отправим всплывающее окно после результата
+    await callback.answer(
+        text="Спасибо, что воспользовались ботом!",
+        show_alert=True
+    )
+    # или просто await callback.answer()
+
+# Продолжим с колбэками
+# Здесь хранятся пользовательские данные.
+# Т.к. это словарь в памяти, то при перезапуске он очистится
+user_data = {}
+#сформируем инлайн-клавиатуру 
+def get_keyboard():
+    buttons = [
+        [
+            types.InlineKeyboardButton(text="-1", callback_data="num_decr"),
+            types.InlineKeyboardButton(text="+1", callback_data="num_incr")
+        ],
+        [types.InlineKeyboardButton(text="Подтвердить", callback_data="num_finish")]
+    ]
+    keyboard = types.InlineKeyboardMarkup(inline_keyboard=buttons)
+    return keyboard
+
+# формируем сообщение с переменным аргументом
+async def update_num_text(message: types.Message, new_value: int):
+    with suppress(TelegramBadRequest):
+        await message.edit_text(
+            f"Укажите число: {new_value}",
+            reply_markup=get_keyboard()
+        )
+
+# запуск клавиатуры по команде /numbers
+@dp.message(Command("numbers"))
+async def cmd_numbers(message: types.Message):
+    user_data[message.from_user.id] = 0
+    await message.answer("Укажите число: 0", reply_markup=get_keyboard())
+
+
+@dp.callback_query(F.data.startswith("num_"))
+async def callbacks_num(callback: types.CallbackQuery):
+    user_value = user_data.get(callback.from_user.id, 0)
+    action = callback.data.split("_")[1]
+
+    if action == "incr":
+        user_data[callback.from_user.id] = user_value+1
+        await update_num_text(callback.message, user_value+1)
+    elif action == "decr":
+        user_data[callback.from_user.id] = user_value-1
+        await update_num_text(callback.message, user_value-1)
+    elif action == "finish":
+        await callback.message.edit_text(f"Итого: {user_value}")
+
+    await callback.answer()
 
 @dp.message(Command("inline_url"))
 async def cmd_inline_url(message: types.Message, bot: Bot):
