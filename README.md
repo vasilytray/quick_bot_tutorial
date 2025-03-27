@@ -590,3 +590,5 @@ async def update_num_text(message: types.Message, new_value: int):
             reply_markup=get_keyboard()
         )
 ```
+#### Фабрика колбэков
+

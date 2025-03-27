@@ -341,7 +341,10 @@ async def cmd_special_buttons(message: types.Message):
 
     await message.answer(
         "Выберите действие:",
-        reply_markup=builder.as_markup(resize_keyboard=True),
+        reply_markup=builder.as_markup(
+            resize_keyboard=True,
+            one_time_keyboard=True
+            ),
     )
 # Прием нажатий нижних двух кнопок
 @dp.message(lambda message: message.contact is not None)

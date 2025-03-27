@@ -155,6 +155,7 @@ async def send_random_value(callback: types.CallbackQuery):
     )
     # или просто await callback.answer()
 
+
 # Продолжим с колбэками
 # Здесь хранятся пользовательские данные.
 # Т.к. это словарь в памяти, то при перезапуске он очистится
@@ -202,6 +203,8 @@ async def callbacks_num(callback: types.CallbackQuery):
 
     await callback.answer()
 
+
+
 @dp.message(Command("inline_url"))
 async def cmd_inline_url(message: types.Message, bot: Bot):
     builder = InlineKeyboardBuilder()
@@ -227,6 +230,42 @@ async def cmd_inline_url(message: types.Message, bot: Bot):
         'Выберите ссылку',
         reply_markup=builder.as_markup(),
     )
+
+
+# Фабрика callBack-ов
+# новые импорты!
+from typing import Optional
+from aiogram.filters.callback_data import CallbackData
+
+
+class NumbersCallbackFactory(CallbackData, prefix="fabnum"):
+    action: str
+    value: Optional[int] = None
+
+# Сгенерируем клавиатуру
+def get_keyboard_fab():
+    builder = InlineKeyboardBuilder()
+    builder.button(
+        text="-2", callback_data=NumbersCallbackFactory(action="change", value=-2)
+    )
+    builder.button(
+        text="-1", callback_data=NumbersCallbackFactory(action="change", value=-1)
+    )
+    builder.button(
+        text="+1", callback_data=NumbersCallbackFactory(action="change", value=1)
+    )
+    builder.button(
+        text="+2", callback_data=NumbersCallbackFactory(action="change", value=2)
+    )
+    builder.button(
+        text="Подтвердить", callback_data=NumbersCallbackFactory(action="finish")
+    )
+    # Выравниваем кнопки по 4 в ряд, чтобы получилось 4 + 1
+    builder.adjust(4)
+    return builder.as_markup()
+
+# Методы отправки сообщения и его редактирования
+
 
     # Запуск процесса поллинга новых апдейтов
 async def main():
