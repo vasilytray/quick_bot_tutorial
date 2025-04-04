@@ -45,7 +45,7 @@ dp = Dispatcher()
 dp["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
 # Хэндлер на команду /start
-@dp.message(Command("start"))
+#@dp.message(Command("start"))
 async def cmd_start(message: types.Message):
     # await message.answer("Привет! ")
     content = as_list(
@@ -423,8 +423,7 @@ async def cmd_start_vfy(message: types.Message):
         "Для подтверждения номера телефона нажмите кнопку ниже:",
         reply_markup=builder.as_markup(
             resize_keyboard=True,  # Опционально: автоматический размер
-            one_time_keyboard=True, # Опционально: скрыть после нажатия
-            input_field_placeholder="Подтвердите номер телефона"  # Подсказка в поле ввода
+            one_time_keyboard=True # Опционально: скрыть после нажатия
         )
     )
 
