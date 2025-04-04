@@ -279,3 +279,15 @@ git clone git@github.com:<ИМЯ НА ГИТХАБЕ>/mybot.git
 ```sh
 git pull --rebase
 ```
+
+В нашем случае 
+
+```sh
+git pull --rebase git@github.com:vasilytray/quick_bot_tutorial.git
+```
+
+#### Запустим контейнер с обновленным ботом
+
+```sh
+docker-compose up --build -d
+```

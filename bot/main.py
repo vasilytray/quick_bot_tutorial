@@ -43,8 +43,8 @@ bot = Bot(
 dp = Dispatcher()
 dp["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-# Хэндлер на команду /start
-@dp.message(Command("start"))
+# Хэндлер на команду /help
+@dp.message(Command("help"))
 async def cmd_start(message: types.Message):
     # await message.answer("Привет! ")
     content = as_list(
@@ -54,17 +54,17 @@ async def cmd_start(message: types.Message):
         ),
         as_marked_section(
             Bold("Я умею:"),
-            "/test1  - Отвечу Test1",
-            "/answer - Просто отвечу",
-            "/reply  - Отвечу ответом",
+            "/verify    - Подтвердить номера телефона",
             "/name   - Поприветствую тебя по Имени и Фамилии",
             "/aboute   - Дам тебе характеристику", 
             "/dice   - Подкину для тебя кубик, загадай число ;)",
+            "/special_buttons - выведу спецкнопки с командами",
+            "/hidden_link   - Подкину для тебя угарную фотку ;)",
             "Если ты мне отправишь гифку, я тебе ей же и отвечу",
+            "Если ты напишешь 'круто', я соглашусь с тобой",
             "----------",
             "/more   - Еще больше возможностей!",
-            "/vfy    - Получить подтверждение Вашего номера телефона",
-
+            
             marker="✅ ",
         ),
         as_marked_section(
@@ -98,10 +98,14 @@ async def cmd_more(message: types.Message):
             "e-mail,",
             "Номер телефона,",
             "Я распознаю их и напишу что нашел", 
-            "/special_buttons - выведу спецкнопки с командами",
+            "/test1  - Отвечу Test1",
+            "/answer - Просто отвечу",
+            "/reply  - Отвечу ответом",
+            "/aboute   - Дам тебе характеристику",
             "/dice   - Подкину для тебя кубик, загадай число ;)",
+            "/numbers  - запущу кликер на call-back кнопках",
             "/settimer <time> <message> - через установленное время сообще Message ;)", 
-            "/hidden_link   - Подкину для тебя угарную фотку ;)",
+
             marker="✅ ",
         ),
         HashTag("#еще"),
@@ -286,7 +290,11 @@ async def somebody_added(message: Message):
     for user in message.new_chat_members:
         # проперти full_name берёт сразу имя И фамилию 
         # (на скриншоте выше у юзеров нет фамилии)
-        await message.reply(f"Привет, {user.full_name}")
+        await message.reply(
+            f"Привет, {user.full_name}!"
+            f"Это приватный чат сервиса."
+            f"Чтобы узнать о возможностях бота напиши /help"
+            )
 
 # Прячем ссылку в HTML
 @dp.message(Command("hidden_link"))
@@ -402,11 +410,11 @@ async def cmd_inline_url(message: types.Message, bot: Bot):
     )
 
 
-@dp.message(Command("vfy"))
+@dp.message(Command("verify"))
 @dp.message(CommandStart(
-    deep_link=True, magic=F.args == "vfy"
+    deep_link=True, magic=F.args == "verify"
 ))
-async def cmd_start_vfy(message: types.Message):
+async def cmd_start_verify(message: types.Message):
     builder = ReplyKeyboardBuilder()
     builder.row(
         types.KeyboardButton(
