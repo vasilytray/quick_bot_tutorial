@@ -44,9 +44,9 @@ bot = Bot(
 dp = Dispatcher()
 dp["started_at"] = datetime.now().strftime("%Y-%m-%d %H:%M")
 
-# Хэндлер на команду /start
-#@dp.message(Command("start"))
-async def cmd_start(message: types.Message):
+# Хэндлер на команду /help
+@dp.message(Command("help"))
+async def cmd_help(message: types.Message):
     # await message.answer("Привет! ")
     content = as_list(
         Text(
@@ -219,7 +219,7 @@ async def cmd_settimer(
         return
     # Пробуем разделить аргументы на две части по первому встречному пробелу
     try:
-        delay_time, text_to_send = command.args.split(" ", maxsplit=1)
+        delay_time, text_to_send = command.args.split(" ", maxsplit=2)
     # Если получилось меньше двух частей, вылетит ValueError
     except ValueError:
         await message.answer(
